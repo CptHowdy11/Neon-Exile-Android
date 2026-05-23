@@ -1,0 +1,19 @@
+{
+  "name": "neon-exile",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Neon Exile browser game packaged for Android with Capacitor.",
+  "scripts": {
+    "build": "node scripts/build-web.mjs",
+    "cap:add:android": "npx cap add android",
+    "cap:open:android": "npm run build && npx cap sync android && npx cap open android",
+    "cap:sync": "npm run build && npx cap sync"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/core": "^7.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.0.0"
+  }
+}
