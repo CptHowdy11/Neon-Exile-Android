@@ -783,6 +783,12 @@ button:disabled {
   gap: 6px;
   flex: 1;
   min-width: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+  padding: 0;
+  text-align: left;
 }
 
 .status-pill {
@@ -1494,6 +1500,13 @@ button:disabled {
   .menu-quit {
     right: 14px;
     bottom: 18px;
+  }
+}
+
+@media (orientation: portrait) {
+  .bottom-bar:not(.stats-expanded) .status-player,
+  .bottom-bar:not(.stats-expanded) .status-money {
+    display: none;
   }
 }
 

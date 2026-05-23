@@ -692,6 +692,7 @@ const defaultLog = ["You wake under a vending machine awning with your name half
 
 let activeSlot = Number(localStorage.getItem(SLOT_KEY) || 0);
 let state = activeSlot ? loadState(activeSlot) : menuState();
+let mobileStatsOpen = false;
 
 function menuState() {
   return {
@@ -2060,15 +2061,15 @@ function renderBottomBar() {
   const player = state.player;
   ensureLoadout();
   return `
-    <footer class="bottom-bar theme-${state.area}">
+    <footer class="bottom-bar theme-${state.area}${mobileStatsOpen ? " stats-expanded" : ""}">
       ${renderPortrait(player.portrait)}
-      <div class="status-grid">
-        <span class="status-pill"><b>${player.name}</b>${classes[player.classId].name}</span>
-        <span class="status-pill"><b>Level</b>${player.level} (${player.xp}/${xpForNext()} XP)</span>
-        <span class="status-pill"><b>Guts left</b>${player.guts}/${player.maxGuts}</span>
-        <span class="status-pill"><b>Money</b>${player.credits} credits</span>
-        <span class="status-pill"><b>Status</b>${player.status.length ? player.status.map(s => typeof s === 'object' ? s.name : s).join(", ") : "Clear"}</span>
-      </div>
+      <button class="status-grid" type="button" data-toggle-stats aria-expanded="${mobileStatsOpen}" aria-label="Toggle full stat bar">
+        <span class="status-pill status-player"><b>${player.name}</b>${classes[player.classId].name}</span>
+        <span class="status-pill status-level"><b>Level</b>${player.level} (${player.xp}/${xpForNext()} XP)</span>
+        <span class="status-pill status-guts"><b>Guts left</b>${player.guts}/${player.maxGuts}</span>
+        <span class="status-pill status-money"><b>Money</b>${player.credits} credits</span>
+        <span class="status-pill status-state"><b>Status</b>${player.status.length ? player.status.map(s => typeof s === 'object' ? s.name : s).join(", ") : "Clear"}</span>
+      </button>
       <nav class="bar-actions" aria-label="Game links">
         <button data-mode="area">Map</button>
         <button data-mode="level">Stats</button>
@@ -2081,6 +2082,11 @@ function renderBottomBar() {
 }
 
 function bindEvents() {
+  document.querySelector("[data-toggle-stats]")?.addEventListener("click", () => {
+    mobileStatsOpen = !mobileStatsOpen;
+    render();
+  });
+
   document.querySelector("#createForm")?.addEventListener("submit", (event) => {
     event.preventDefault();
     startGame(new FormData(event.currentTarget));
