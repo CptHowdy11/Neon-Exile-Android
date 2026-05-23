@@ -3,3 +3,6 @@ android/.gradle/
 android/app/build/
 android/build/
 www/
+android/local.properties
+android/.idea/
+android/capacitor-cordova-android-plugins/build/

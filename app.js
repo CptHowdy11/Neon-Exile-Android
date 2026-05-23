@@ -245,7 +245,7 @@ const foes = {
       help: {
         label: "Dig them free",
         prompt: "A scavenger is pinned beneath a solar rig. Their pack might be bait. Their breathing is real.",
-        success: "You pry the rig loose. The scavenger coughs up thanks and points you to buried salvage.",
+        success: "You pry the rig loose. The scavenger coachs up thanks and points you to buried salvage.",
       },
     },
   ],
@@ -262,12 +262,12 @@ const foes = {
     { name: "Pressure-Locked Guardian", key: "killDrone", hp: 66, damage: 15, xp: 48, credits: 152, loot: "Abyssal Cooling Key" },
   ],
   furnaceLine: [
-    { name: "Furnace Crew Butcher", key: "raider", hp: 56, damage: 13, xp: 38, credits: 110, loot: "Molten Gearheart" },
-    { name: "Sparkfall Saboteur", key: "hexer", hp: 52, damage: 12, xp: 36, credits: 104, loot: "Ignition Cipher" },
+    { name: "Burned Foundry Worker", key: "burnedWorker", hp: 54, damage: 12, xp: 42, credits: 120, loot: "Foundry Union Token", help: { label: "Pull them from the slag", prompt: "A burned worker is trapped beside a slag trough while security pretends not to see.", success: "You drag them clear and they press a union token into your palm." } },
+    { name: "Furnace Armored Guard", key: "furnaceGuard", hp: 66, damage: 16, xp: 46, credits: 140, loot: "Heat-Scarred Badge" },
   ],
   vacuumYard: [
-    { name: "Vacuum Yard Reaver", key: "ashlung", hp: 74, damage: 17, xp: 54, credits: 180, loot: "Void-Sealed Reactor" },
-    { name: "Orbital Scrap Colossus", key: "scrapHorror", hp: 92, damage: 19, xp: 62, credits: 220, loot: "Starfall Alloy Spine" },
+    { name: "Airlock Burn Victim", key: "burnedWorker", hp: 72, damage: 16, xp: 58, credits: 188, loot: "Pressure-Safe Cache", help: { label: "Seal the airlock", prompt: "A worker is half-pinned in a failing airlock, one hand still holding the pressure lever.", success: "You seal the airlock before the yard vents. The worker leaves you the cache code." } },
+    { name: "Vacuum Furnace Guard", key: "furnaceGuard", hp: 90, damage: 20, xp: 66, credits: 235, loot: "Vacuum-Forged Plate" },
   ],
   coralShrine: [
     { name: "Coral Data Guardian", key: "reefGuardian", hp: 94, damage: 20, xp: 72, credits: 260, loot: "Coral Logic Core" },
@@ -419,6 +419,14 @@ const merchants = {
   rookMarket: {
     name: "Grinwire Market",
     intro: "A cracked neon awning buzzes over crates of questionable upgrades.",
+    dealerNames: {
+      weapons: "Gramps' Guns",
+      armor: "Rainy-Day Rags",
+      implants: "Chrome & Bone",
+      items: "Grinwire Sundries",
+      bank: "The Bolt Hole",
+      hotel: "The Neon Nook",
+    },
     dealers: {
       weapons: [
         { name: "Street Pistol", type: "weapon", slot: "hand", cost: 35, mods: { attack: 3, speed: 1 }, note: "A 3 / S 1" },
@@ -446,6 +454,14 @@ const merchants = {
   glassMarket: {
     name: "Elevator 99 Dealers",
     intro: "A luxury elevator that only stops for people with credits.",
+    dealerNames: {
+      weapons: "Gilded Edge",
+      armor: "Mirrorweave Silks",
+      implants: "Status Neuralics",
+      items: "High-Tier Meds",
+      bank: "The Credit Vault",
+      hotel: "The Glass Suite",
+    },
     dealers: {
       weapons: [
         { name: "Monowire Cuff", type: "weapon", slot: "hand", cost: 88, mods: { attack: 5, wits: 2 }, note: "A 5 / W 2" },
@@ -473,6 +489,14 @@ const merchants = {
   wasteMarket: {
     name: "Dust Saint Caravan",
     intro: "Armored vans circle a fire made from obsolete server racks.",
+    dealerNames: {
+      weapons: "Rust & Rails",
+      armor: "Sandstorm Skins",
+      implants: "Nomad Knuckles",
+      items: "Dust Saint Wares",
+      bank: "Iron Chest",
+      hotel: "The Sand Sleeper",
+    },
     dealers: {
       weapons: [
         { name: "Rail Hatchet", type: "weapon", slot: "hand", cost: 140, mods: { attack: 8, guts: 2, speed: -2 }, note: "A 8 / G 2 / S -2" },
@@ -500,6 +524,14 @@ const merchants = {
   harborMarket: {
     name: "Tidewire Exchange",
     intro: "Smugglers sell clean steel, wet data, and excuses under sodium dock lamps.",
+    dealerNames: {
+      weapons: "Tidehook Iron",
+      armor: "Salt-Caked Coats",
+      implants: "Mag-Dock Neural",
+      items: "Smuggler Stash",
+      bank: "The Cargo Lock",
+      hotel: "The Wet Dock",
+    },
     dealers: {
       weapons: [
         { name: "Harbor Flechette", type: "weapon", slot: "hand", cost: 168, mods: { attack: 8, speed: 2 }, note: "A 8 / S 2" },
@@ -526,6 +558,14 @@ const merchants = {
   foundryMarket: {
     name: "Sparkfall Bazaar",
     intro: "Foundry crews trade furnace salvage while the launch tower groans overhead.",
+    dealerNames: {
+      weapons: "Furnace Forge",
+      armor: "Spark-Proof Plates",
+      implants: "Foundry Flex",
+      items: "The Hot Box",
+      bank: "The Steel Drum",
+      hotel: "The Forge Flophouse",
+    },
     dealers: {
       weapons: [
         { name: "Furnace Maul", type: "weapon", slot: "hand", cost: 190, mods: { attack: 10, guts: 2, speed: -2 }, note: "A 10 / G 2 / S -2" },
@@ -552,6 +592,14 @@ const merchants = {
   reefMarket: {
     name: "Reefglass Market",
     intro: "Pressure-suited dealers trade salvage beneath humming coral glass.",
+    dealerNames: {
+      weapons: "Abyss Spears",
+      armor: "Pressure Suits",
+      implants: "Current Chrome",
+      items: "The Reef Rack",
+      bank: "The Bubble Safe",
+      hotel: "The Pressure Tank",
+    },
     dealers: {
       weapons: [
         { name: "Coral Arc Spear", type: "weapon", slot: "hand", cost: 260, mods: { attack: 13, wits: 3 }, note: "A 13 / W 3" },
@@ -628,6 +676,16 @@ const dealerDetails = {
       "Credits in the vault do not bleed when you do.",
     ],
   },
+  hotel: {
+    title: "Lodging",
+    art: "pixel-dealer-hotel",
+    tile: "Rest and recovery",
+    welcomes: [
+      "Keep the noise down, or I'll keep the deposit.",
+      "We don't ask about the stains, you don't ask about the cameras.",
+      "Clean sheets cost extra. Safety is not guaranteed on the floor.",
+    ],
+  },
 };
 
 const defaultLog = ["You wake under a vending machine awning with your name half-remembered and the city already billing you interest."];
@@ -690,7 +748,11 @@ function pick(list) {
 
 function effectiveStat(stat) {
   const player = state.player;
-  return player.stats[stat] + gearMod(stat) + (classes[player.classId].statBonus[stat] || 0);
+  const statusMod = player.status.reduce((sum, s) => {
+    if (typeof s === 'object' && s.stat === stat) return sum + s.value;
+    return sum;
+  }, 0);
+  return player.stats[stat] + gearMod(stat) + (classes[player.classId].statBonus[stat] || 0) + statusMod;
 }
 
 function armorValue() {
@@ -839,6 +901,30 @@ function tickBoosts() {
   const expired = state.player.activeBoosts.filter((boost) => boost.remaining <= 0);
   state.player.activeBoosts = state.player.activeBoosts.filter((boost) => boost.remaining > 0);
   expired.forEach((boost) => addLog(`${boost.name} wore off.`));
+
+  // Tick status objects
+  state.player.status.forEach((s) => {
+    if (typeof s === 'object' && s.remaining !== undefined) {
+      s.remaining -= 1;
+    }
+  });
+  const expiredStatus = state.player.status.filter(s => typeof s === 'object' && s.remaining <= 0);
+  state.player.status = state.player.status.filter(s => typeof s !== 'object' || s.remaining > 0);
+  expiredStatus.forEach(s => addLog(`Status effect '${s.name}' has worn off.`));
+}
+const expired = state.player.activeBoosts.filter((boost) => boost.remaining <= 0);
+  state.player.activeBoosts = state.player.activeBoosts.filter((boost) => boost.remaining > 0);
+  expired.forEach((boost) => addLog(`${boost.name} wore off.`));
+
+  // Tick status objects
+  state.player.status.forEach((s) => {
+    if (typeof s === 'object' && s.remaining !== undefined) {
+      s.remaining -= 1;
+    }
+  });
+  const expiredStatus = state.player.status.filter(s => typeof s === 'object' && s.remaining <= 0);
+  state.player.status = state.player.status.filter(s => typeof s !== 'object' || s.remaining > 0);
+  expiredStatus.forEach(s => addLog(`Status effect '${s.name}' has worn off.`));
 }
 
 function tickSkillCooldowns() {
@@ -1133,7 +1219,7 @@ function allSkills() {
     className: classes[track.classId].name,
     treeLevel: track.treeLevel,
     unlocked: track.treeLevel >= move.level,
-    cooldown: Math.ceil(move.level / 5),
+    cooldown: Math.ceil(move.level / 5) + 4,
   })));
 }
 
@@ -1281,6 +1367,91 @@ function withdrawItem(index) {
   setState({});
 }
 
+function stayHotel(cost, type) {
+  if (state.player.credits < cost) return;
+  state.player.credits -= cost;
+
+  const roomMessages = [
+    "The sheets were actually clean. You wake up feeling like a new person.",
+    "Real coffee in the morning? It's a luxury you could get used to.",
+    "You slept so deeply you forgot your own name for a second. That's a good sign.",
+    "No sirens, no screams. Just pure, quiet rest. You feel powerful."
+  ];
+
+  const floorMessages = [
+    "You wake up with a stiff neck and a few new bruises. At least the rats were polite.",
+    "The floor is cold, but the dreams were vivid. You feel... okay, mostly.",
+    "Someone tried to use you as a footstool during the night. You're awake now.",
+    "You survived the night. That's the best thing you can say about this spot."
+  ];
+
+  let resultTitle = "";
+  let resultBody = "";
+
+  if (type === "room") {
+    state.player.guts = state.player.maxGuts;
+    // Clear existing lodging statuses
+    state.player.status = state.player.status.filter(s => typeof s === 'string' || (!s.name.includes("Rest") && !s.name.includes("Sniff") && !s.name.includes("Heavy")));
+
+    const bonusStat = pick(["wits", "guts", "charm", "speed", "attack"]);
+    const bonusValue = Math.random() < 0.3 ? 2 : 1;
+    state.player.status.push({
+      name: "Well Rested",
+      stat: bonusStat,
+      value: bonusValue,
+      remaining: 3
+    });
+
+    resultTitle = "Well Rested";
+    resultBody = `${pick(roomMessages)}<br><br><strong>Status gained: Well Rested (+${bonusValue} ${bonusStat[0].toUpperCase()}${bonusStat.slice(1)} for 3 quests).</strong>`;
+  } else {
+    state.player.guts = Math.min(state.player.maxGuts, state.player.guts + Math.floor(state.player.maxGuts / 2));
+    resultTitle = "Rough Night";
+    resultBody = pick(floorMessages);
+
+    if (Math.random() < 0.3) {
+      const penaltyStat = pick(["wits", "guts", "charm", "speed", "attack"]);
+      const sName = Math.random() < 0.5 ? "Sniffles" : "Heavy Head";
+      state.player.status.push({
+        name: sName,
+        stat: penaltyStat,
+        value: -1,
+        remaining: 2
+      });
+      resultBody += `<br><br>The drafty hallway got to you. You feel a bit under the weather.<br><strong>Status gained: ${sName} (-1 ${penaltyStat[0].toUpperCase()}${penaltyStat.slice(1)} for 2 quests).</strong>`;
+    }
+
+    if (Math.random() < 0.15) {
+      if (Math.random() < 0.5 && state.player.credits > 0) {
+        const stolen = Math.floor(state.player.credits * 0.2);
+        state.player.credits -= stolen;
+        resultBody += `<br><br><span class="danger">You wake up to find your pockets lighter. Lost ${stolen} credits.</span>`;
+      } else if (state.player.inventory.length > 0) {
+        const stolenIndex = Math.floor(Math.random() * state.player.inventory.length);
+        const stolenItem = state.player.inventory[stolenIndex];
+        state.player.inventory.splice(stolenIndex, 1);
+        resultBody += `<br><br><span class="danger">You wake up and realize your ${stolenItem.name} is gone. Stolen.</span>`;
+      }
+    }
+  }
+
+  state.result = { title: resultTitle, body: resultBody, done: true };
+  setState({ mode: "result" });
+}
+
+function implantHeal(cost, type) {
+  if (state.player.credits < cost) return;
+  state.player.credits -= cost;
+  if (type === "guts") {
+    state.player.guts = state.player.maxGuts;
+    addLog("The implant dealer sews you back together. It's not pretty, but it holds.");
+  } else if (type === "status") {
+    state.player.status = [];
+    addLog("A chemical flush clears your system. The world stops spinning.");
+  }
+  setState({});
+}
+
 function addStat(stat) {
   if (state.player.unspent <= 0) return;
   state.player.stats[stat] += 1;
@@ -1376,12 +1547,6 @@ function renderMain() {
 
 function renderShell(content) {
   return `
-    <header class="topline">
-      <div class="brand">
-        <h1>Neon Exile</h1>
-        <p>Cyberpunk choices, street-level trouble, and salvage beyond the city wall.</p>
-      </div>
-    </header>
     <section class="screen">${content}</section>
   `;
 }
@@ -1541,22 +1706,26 @@ function renderQuest() {
   }).join("");
   return renderShell(`
     <section class="quest-panel">
-      <div class="encounter-hero">
-        <div class="encounter-art pixel-tile ${pixelArt[foe.key]}"></div>
-        <div class="foe-box">
-          <p class="section-label">Random trouble</p>
-          <h2 class="foe-name">${foe.name}</h2>
-          <div class="meter" aria-label="Foe health"><span style="--value: ${pct}%"></span></div>
-          <p>${quest.foeHp}/${foe.hp} nerve left. Damage ${foe.damage}. Loot signal: ${foe.loot}.</p>
-          ${foe.help ? `<p class="help-prompt">${foe.help.prompt}</p>` : ""}
+      <div class="quest-grid">
+        <div class="quest-left">
+          <div class="encounter-art pixel-tile ${pixelArt[foe.key]}"></div>
+          <div class="foe-box">
+            <p class="section-label">Random trouble</p>
+            <h2 class="foe-name">${foe.name}</h2>
+            <div class="meter" aria-label="Foe health"><span style="--value: ${pct}%"></span></div>
+            <p>${quest.foeHp}/${foe.hp} nerve left. Damage ${foe.damage}. Loot signal: ${foe.loot}.</p>
+            ${foe.help ? `<p class="help-prompt">${foe.help.prompt}</p>` : ""}
+          </div>
         </div>
-      </div>
-      <div class="choice-grid">
-        <button class="choice-card" data-action="attack"><h3>${quest.choices.attack}</h3><p>Guts-based attack. Direct, messy, effective.</p></button>
-        <button class="choice-card" data-action="trick"><h3>${quest.choices.trick}</h3><p>Wits-based play. Turn the scene sideways.</p></button>
-        ${foe.help ? `<button class="choice-card" data-action="help"><h3>${foe.help.label}</h3><p>Charm-based ambiguous choice. Success gives XP and random loot.</p></button>` : ""}
-        ${skillButtons}
-        <button class="choice-card danger" data-action="run"><h3>${quest.choices.run}</h3><p>Escape the fight, lose some credits.</p></button>
+        <div class="quest-right">
+          <div class="choice-grid">
+            <button class="choice-card" data-action="attack"><h3>${quest.choices.attack}</h3><p>Guts-based attack. Direct, messy, effective.</p></button>
+            <button class="choice-card" data-action="trick"><h3>${quest.choices.trick}</h3><p>Wits-based play. Turn the scene sideways.</p></button>
+            ${foe.help ? `<button class="choice-card" data-action="help"><h3>${foe.help.label}</h3><p>Charm-based ambiguous choice. Success gives XP and random loot.</p></button>` : ""}
+            ${skillButtons}
+            <button class="choice-card danger" data-action="run"><h3>${quest.choices.run}</h3><p>Escape the fight, lose some credits.</p></button>
+          </div>
+        </div>
       </div>
     </section>
   `);
@@ -1591,7 +1760,7 @@ function renderMerchant() {
           ${Object.entries(dealerDetails).map(([id, detail]) => `
             <button class="dealer-tile" data-dealer="${id}">
               <span class="dealer-art pixel-tile ${dealerArt(state.merchant, id)}"></span>
-              <span><strong>${detail.title}</strong><small>${detail.tile}</small></span>
+              <span><strong>${merchant.dealerNames[id] || detail.title}</strong><small>${detail.tile}</small></span>
             </button>
           `).join("")}
         </div>
@@ -1601,22 +1770,52 @@ function renderMerchant() {
   }
   const detail = dealerDetails[dealer];
   if (dealer === "bank") return renderBank(merchant, detail);
+  if (dealer === "hotel") return renderHotel(merchant, detail);
+
   const sellable = inventoryStacks(state.player.inventory
     .map((item, index) => ({ item, index }))
     .filter(({ item }) => merchantBuys(dealer, item)));
   const lootTotal = state.player.inventory
     .filter((item) => item.type === "loot")
     .reduce((sum, item) => sum + (item.value || 1), 0);
+
+  const missingGuts = state.player.maxGuts - state.player.guts;
+  const healCost = Math.ceil(missingGuts * 1.5);
+  const statusHealCost = state.player.level * 8;
+  const healerHtml = dealer === "implants" ? `
+    <p class="section-label">Healer services</p>
+    <div class="bank-grid">
+      <article class="equipment-card">
+        <h3>Repair Meat</h3>
+        <p>Restores ${missingGuts} Guts. Surgical precision, mostly.</p>
+        <span class="tag">${healCost} credits</span>
+        <div class="equip-actions">
+          <button data-implant-heal-guts="${healCost}" ${state.player.credits < healCost || missingGuts <= 0 ? "disabled" : ""}>Heal Guts</button>
+        </div>
+      </article>
+      <article class="equipment-card">
+        <h3>Purge Status</h3>
+        <p>Clears: ${state.player.status.length ? state.player.status.join(", ") : "Nothing to clear"}.</p>
+        <span class="tag">${statusHealCost} credits</span>
+        <div class="equip-actions">
+          <button data-implant-heal-status="${statusHealCost}" ${state.player.credits < statusHealCost || !state.player.status.length ? "disabled" : ""}>Clear Status</button>
+        </div>
+      </article>
+    </div>
+  ` : "";
+
   return renderShell(`
     <section class="merchant-panel">
       <div class="dealer-header">
         <div class="merchant-portrait pixel-tile ${dealerArt(state.merchant, dealer)}"></div>
         <div>
           <p class="section-label">${merchant.name}</p>
-          <h2>${detail.title}</h2>
+          <h2>${merchant.dealerNames[dealer] || detail.title}</h2>
           <p>${pick(detail.welcomes)}</p>
         </div>
       </div>
+      ${healerHtml}
+      <p class="section-label">Buy items</p>
       <div class="shop-grid">
         ${merchant.dealers[dealer].map((item, index) => `
           <button class="shop-card" data-buy="${index}" data-buy-dealer="${dealer}">
@@ -1655,10 +1854,10 @@ function renderBank(merchant, detail) {
   return renderShell(`
     <section class="merchant-panel">
       <div class="dealer-header">
-        <div class="merchant-portrait pixel-tile pixel-dealer-bank"></div>
+        <div class="merchant-portrait pixel-tile ${dealerArt(state.merchant, "bank")}"></div>
         <div>
           <p class="section-label">${merchant.name}</p>
-          <h2>${detail.title}</h2>
+          <h2>${merchant.dealerNames.bank || detail.title}</h2>
           <p>${pick(detail.welcomes)}</p>
         </div>
       </div>
@@ -1696,6 +1895,45 @@ function renderBank(merchant, detail) {
             <button data-withdraw-item="${indexes[0]}">Withdraw one</button>
           </article>
         `).join("") : `<p class="empty">No items in protected storage.</p>`}
+      </div>
+      <div class="dealer-actions">
+        <button data-merchant-hub>Return to ${merchant.name}</button>
+        <button data-back class="primary">Back to ${areas[state.area].name}</button>
+      </div>
+    </section>
+  `);
+}
+
+function renderHotel(merchant, detail) {
+  const roomCost = Math.max(20, state.player.level * 10);
+  const floorCost = Math.max(5, state.player.level * 2);
+  return renderShell(`
+    <section class="merchant-panel">
+      <div class="dealer-header">
+        <div class="merchant-portrait pixel-tile ${dealerArt(state.merchant, "hotel")}"></div>
+        <div>
+          <p class="section-label">${merchant.name}</p>
+          <h2>${merchant.dealerNames.hotel || detail.title}</h2>
+          <p>${pick(detail.welcomes)}</p>
+        </div>
+      </div>
+      <div class="bank-grid">
+        <article class="equipment-card">
+          <h3>Private Room</h3>
+          <p>Full rest. Heals all Guts and clears negative status. Secure storage.</p>
+          <span class="tag">${roomCost} credits</span>
+          <div class="equip-actions">
+            <button data-stay-room="${roomCost}" ${state.player.credits < roomCost ? "disabled" : ""}>Book Room</button>
+          </div>
+        </article>
+        <article class="equipment-card">
+          <h3>Floor Spot</h3>
+          <p>A dusty patch of hallway. Restores half Guts. Watch your pockets.</p>
+          <span class="tag">${floorCost} credits</span>
+          <div class="equip-actions">
+            <button data-stay-floor="${floorCost}" ${state.player.credits < floorCost ? "disabled" : ""}>Sleep on Floor</button>
+          </div>
+        </article>
       </div>
       <div class="dealer-actions">
         <button data-merchant-hub>Return to ${merchant.name}</button>
@@ -1844,7 +2082,7 @@ function renderBottomBar() {
         <span class="status-pill"><b>Level</b>${player.level} (${player.xp}/${xpForNext()} XP)</span>
         <span class="status-pill"><b>Guts left</b>${player.guts}/${player.maxGuts}</span>
         <span class="status-pill"><b>Money</b>${player.credits} credits</span>
-        <span class="status-pill"><b>Status</b>${player.status.length ? player.status.join(", ") : "Clear"}</span>
+        <span class="status-pill"><b>Status</b>${player.status.length ? player.status.map(s => typeof s === 'object' ? s.name : s).join(", ") : "Clear"}</span>
       </div>
       <nav class="bar-actions" aria-label="Game links">
         <button data-mode="area">Map</button>
@@ -1927,6 +2165,10 @@ function bindEvents() {
   document.querySelectorAll("[data-withdraw-credits]").forEach((button) => button.addEventListener("click", withdrawCredits));
   document.querySelectorAll("[data-store-item]").forEach((button) => button.addEventListener("click", () => storeItem(Number(button.dataset.storeItem))));
   document.querySelectorAll("[data-withdraw-item]").forEach((button) => button.addEventListener("click", () => withdrawItem(Number(button.dataset.withdrawItem))));
+  document.querySelectorAll("[data-stay-room]").forEach((button) => button.addEventListener("click", () => stayHotel(Number(button.dataset.stayRoom), "room")));
+  document.querySelectorAll("[data-stay-floor]").forEach((button) => button.addEventListener("click", () => stayHotel(Number(button.dataset.stayFloor), "floor")));
+  document.querySelectorAll("[data-implant-heal-guts]").forEach((button) => button.addEventListener("click", () => implantHeal(Number(button.dataset.implantHealGuts), "guts")));
+  document.querySelectorAll("[data-implant-heal-status]").forEach((button) => button.addEventListener("click", () => implantHeal(Number(button.dataset.implantHealStatus), "status")));
   document.querySelectorAll("[data-level-stat]").forEach((button) => button.addEventListener("click", () => addStat(button.dataset.levelStat)));
   document.querySelectorAll("[data-add-class]").forEach((button) => button.addEventListener("click", () => addClass(button.dataset.addClass)));
   document.querySelectorAll("[data-equip-skill]").forEach((button) => button.addEventListener("click", () => equipSkill(button.dataset.equipSkill)));

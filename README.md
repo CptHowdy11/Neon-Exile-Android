@@ -5,6 +5,7 @@ A browser-based cyberpunk text adventure prototype.
 Open `index.html` in a browser to play. The game saves every choice to local browser storage, so refreshing the page resumes from the last saved state.
 
 To package the game for Android, follow `MOBILE_ANDROID.md`.
+To prepare the iOS version, follow `IOS_PORT_PLAN.md` and `MOBILE_IOS.md`.
 
 Current prototype features:
 
