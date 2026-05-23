@@ -912,21 +912,6 @@ function tickBoosts() {
   state.player.status = state.player.status.filter(s => typeof s !== 'object' || s.remaining > 0);
   expiredStatus.forEach(s => addLog(`Status effect '${s.name}' has worn off.`));
 }
-const expired = state.player.activeBoosts.filter((boost) => boost.remaining <= 0);
-  state.player.activeBoosts = state.player.activeBoosts.filter((boost) => boost.remaining > 0);
-  expired.forEach((boost) => addLog(`${boost.name} wore off.`));
-
-  // Tick status objects
-  state.player.status.forEach((s) => {
-    if (typeof s === 'object' && s.remaining !== undefined) {
-      s.remaining -= 1;
-    }
-  });
-  const expiredStatus = state.player.status.filter(s => typeof s === 'object' && s.remaining <= 0);
-  state.player.status = state.player.status.filter(s => typeof s !== 'object' || s.remaining > 0);
-  expiredStatus.forEach(s => addLog(`Status effect '${s.name}' has worn off.`));
-}
-
 function tickSkillCooldowns() {
   ensureLoadout();
   Object.keys(state.player.skillCooldowns).forEach((id) => {
