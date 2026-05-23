@@ -296,6 +296,28 @@ button:disabled {
   gap: 20px;
 }
 
+.create-flow-header {
+  display: grid;
+  gap: 8px;
+}
+
+.create-flow-header h2 {
+  margin: 0;
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+}
+
+.create-flow-header p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.create-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+}
+
 .field {
   display: grid;
   gap: 8px;
@@ -791,6 +813,15 @@ button:disabled {
   text-align: left;
 }
 
+.status-grid:hover:not(:disabled),
+.status-grid:focus-visible:not(:disabled) {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  outline: none;
+  transform: none;
+}
+
 .status-pill {
   flex: 1;
   min-width: 0;
@@ -887,6 +918,11 @@ button:disabled {
 .result-panel {
   min-height: 360px;
   align-content: center;
+}
+
+.intro-panel .portrait {
+  width: 78px;
+  height: 78px;
 }
 
 .result-copy {
@@ -1505,8 +1541,17 @@ button:disabled {
 
 @media (orientation: portrait) {
   .bottom-bar:not(.stats-expanded) .status-player,
-  .bottom-bar:not(.stats-expanded) .status-money {
+  .bottom-bar:not(.stats-expanded) .status-money,
+  .bottom-bar:not(.stats-expanded) .bar-actions {
     display: none;
+  }
+
+  .bottom-bar.stats-expanded .status-grid {
+    flex-wrap: wrap;
+  }
+
+  .bottom-bar.stats-expanded .status-pill {
+    flex-basis: calc(33.333% - 4px);
   }
 }
 

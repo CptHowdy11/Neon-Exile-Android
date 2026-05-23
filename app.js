@@ -694,6 +694,20 @@ let activeSlot = Number(localStorage.getItem(SLOT_KEY) || 0);
 let state = activeSlot ? loadState(activeSlot) : menuState();
 let mobileStatsOpen = false;
 
+function createDefaults() {
+  return {
+    step: "class",
+    classId: "runner",
+    stats: { guts: 2, wits: 2, charm: 2 },
+    name: "Vex",
+    portrait: "portrait-01",
+  };
+}
+
+function createDraft() {
+  return { ...createDefaults(), ...(state.create || {}) };
+}
+
 function menuState() {
   return {
     mode: "mainMenu",
@@ -701,6 +715,7 @@ function menuState() {
     player: null,
     quest: null,
     result: null,
+    create: null,
     log: [...defaultLog],
   };
 }
@@ -712,6 +727,7 @@ function starterState() {
     player: null,
     quest: null,
     result: null,
+    create: createDefaults(),
     log: [...defaultLog],
   };
 }
@@ -949,6 +965,10 @@ function xpForNext() {
   return state.player.level * 26;
 }
 
+function maxGutsFromBase(guts, level = state.player.level) {
+  return 18 + guts * 3 + Math.max(0, level - 1) * 5;
+}
+
 function maybeLevelUp() {
   let leveled = false;
   while (state.player.xp >= xpForNext()) {
@@ -964,26 +984,29 @@ function maybeLevelUp() {
 }
 
 function startGame(formData) {
+  mobileStatsOpen = false;
+  const value = (key) => typeof formData.get === "function" ? formData.get(key) : formData[key];
   const stats = {
-    guts: Number(formData.get("guts")),
-    wits: Number(formData.get("wits")),
-    charm: Number(formData.get("charm")),
+    guts: Number(value("guts")),
+    wits: Number(value("wits")),
+    charm: Number(value("charm")),
   };
-  const maxGuts = 18 + stats.guts * 3;
-  const classId = String(formData.get("classId"));
+  const spentStartingPoints = ["guts", "wits", "charm"].reduce((sum, key) => sum + stats[key], 0);
+  const maxGuts = maxGutsFromBase(stats.guts, 1);
+  const classId = String(value("classId"));
   const firstSkillId = skillId(classId, classes[classId].moves[0]);
   state = {
-    mode: "area",
+    mode: "intro",
     area: "rook",
     player: {
-      name: String(formData.get("name") || "No-Name").trim() || "No-Name",
+      name: String(value("name") || "No-Name").trim() || "No-Name",
       classId,
-      portrait: String(formData.get("portrait")),
+      portrait: String(value("portrait")),
       level: 1,
       xp: 0,
       credits: 30,
       stats,
-      unspent: 0,
+      unspent: Math.max(0, 12 - spentStartingPoints),
       maxGuts,
       guts: maxGuts,
       status: [],
@@ -997,11 +1020,17 @@ function startGame(formData) {
     },
     quest: null,
     result: null,
-    log: [...defaultLog],
+    create: null,
+    log: ["You wake in Rook Sprawl with a headache, wearing nothing but lipstick and a trash bag."],
   };
-  addLog(`${state.player.name} steps into Rook Sprawl as a ${classes[state.player.classId].name}.`);
   saveState();
   render();
+}
+
+function enterFirstArea() {
+  mobileStatsOpen = false;
+  addLog(`${state.player.name} steps into Rook Sprawl as a ${classes[state.player.classId].name}.`);
+  setState({ mode: "area" });
 }
 
 function travel(areaId) {
@@ -1438,6 +1467,19 @@ function implantHeal(cost, type) {
   setState({});
 }
 
+function respecStats(cost) {
+  ensureLoadout();
+  if (state.player.level < 25 || state.player.credits < cost) return;
+  const reclaimed = ["guts", "wits", "charm"].reduce((sum, stat) => sum + Math.max(0, state.player.stats[stat] - 1), 0);
+  state.player.credits -= cost;
+  state.player.stats = { guts: 1, wits: 1, charm: 1 };
+  state.player.unspent += reclaimed;
+  state.player.maxGuts = maxGutsFromBase(1);
+  state.player.guts = Math.min(state.player.guts, state.player.maxGuts);
+  addLog(`The implant dealer burns your old reflex map clean. ${reclaimed} stat points refunded.`);
+  setState({ mode: "level" });
+}
+
 function addStat(stat) {
   if (state.player.unspent <= 0) return;
   state.player.stats[stat] += 1;
@@ -1515,7 +1557,7 @@ function slotSummary(slot) {
 
 function render() {
   const app = document.querySelector("#app");
-  app.innerHTML = `${renderMain()}${state.player && activeSlot ? renderBottomBar() : ""}`;
+  app.innerHTML = `${renderMain()}${state.player && activeSlot && state.mode !== "intro" ? renderBottomBar() : ""}`;
   bindEvents();
 }
 
@@ -1523,6 +1565,7 @@ function renderMain() {
   if (state.mode === "mainMenu") return renderMainMenu();
   if (state.mode === "slotSelect") return renderSlotSelect();
   if (!state.player || state.mode === "create") return renderCreate();
+  if (state.mode === "intro") return renderIntro();
   if (state.mode === "quest") return renderQuest();
   if (state.mode === "result") return renderResult();
   if (state.mode === "merchant") return renderMerchant();
@@ -1584,57 +1627,112 @@ function renderPortrait(portrait) {
 }
 
 function renderCreate() {
+  const draft = createDraft();
+  if (draft.step === "stats") return renderCreateStats(draft);
+  if (draft.step === "identity") return renderCreateIdentity(draft);
+  return renderCreateClass(draft);
+}
+
+function renderCreateHeader(step, title, body) {
+  return `
+    <div class="create-flow-header">
+      <p class="section-label">Step ${step} of 3</p>
+      <h2>${title}</h2>
+      <p>${body}</p>
+    </div>
+  `;
+}
+
+function renderCreateClass(draft) {
+  return renderShell(`
+    <section class="create-panel">
+      ${renderCreateHeader(1, "Choose your class", "Pick the kind of trouble the city already thinks you are.")}
+      <div class="class-grid">
+        ${Object.entries(classes).map(([id, item]) => `
+          <button class="class-card ${draft.classId === id ? "selected" : ""}" type="button" data-create-class="${id}">
+            <h3>${item.name}</h3>
+            <p>${item.description}</p>
+          </button>
+        `).join("")}
+      </div>
+      <div class="moves-grid">
+        ${classes[draft.classId].moves.map((move) => `
+          <article class="move-card">
+            <h3>Lv ${move.level}: ${move.name}</h3>
+            <p>${move.effect}</p>
+          </article>
+        `).join("")}
+      </div>
+      <button class="primary" type="button" data-create-next="stats">Choose Stats</button>
+    </section>
+  `);
+}
+
+function renderCreateStats(draft) {
+  const total = ["guts", "wits", "charm"].reduce((sum, key) => sum + draft.stats[key], 0);
+  return renderShell(`
+    <section class="create-panel">
+      ${renderCreateHeader(2, "Distribute skill points", "Spend your starting edge. Twelve total points, no stat below one.")}
+      <p class="section-label">Starting points left: <span id="pointsLeft">${12 - total}</span></p>
+      ${["guts", "wits", "charm"].map((stat) => `
+        <div class="stat-row">
+          <strong>${stat}</strong>
+          <button class="stepper" type="button" data-dec="${stat}">-</button>
+          <span id="${stat}Value">${draft.stats[stat]}</span>
+          <button class="stepper" type="button" data-inc="${stat}">+</button>
+        </div>
+      `).join("")}
+      <div class="create-actions">
+        <button type="button" data-create-back="class">Back</button>
+        <button class="primary" type="button" data-create-next="identity">Choose Identity</button>
+      </div>
+    </section>
+  `);
+}
+
+function renderCreateIdentity(draft) {
   return renderShell(`
     <form class="create-panel" id="createForm">
-      <div class="create-grid">
-        <section class="class-grid-wrap">
-          <div class="field">
-            <label for="name">Character name</label>
-            <input id="name" name="name" maxlength="24" value="Vex" />
-          </div>
-          <p class="section-label">Class</p>
-          <div class="class-grid">
-            ${Object.entries(classes).map(([id, item], index) => `
-              <button class="class-card ${index === 0 ? "selected" : ""}" type="button" data-class="${id}">
-                <h3>${item.name}</h3>
-                <p>${item.description}</p>
-              </button>
-            `).join("")}
-          </div>
-          <input type="hidden" name="classId" value="runner" />
-          <p class="section-label">Portrait</p>
-          <div class="portrait-grid">
-            ${portraits.map((portrait, index) => `
-              <button class="portrait-btn ${index === 0 ? "selected" : ""}" type="button" data-portrait="${portrait}">
-                ${renderPortrait(portrait)}
-              </button>
-            `).join("")}
-          </div>
-          <input type="hidden" name="portrait" value="portrait-01" />
-        </section>
-        <section>
-          <p class="section-label">Starting points: <span id="pointsLeft">6</span></p>
-          ${["guts", "wits", "charm"].map((stat) => `
-            <div class="stat-row">
-              <strong>${stat}</strong>
-              <button class="stepper" type="button" data-dec="${stat}">-</button>
-              <span id="${stat}Value">2</span>
-              <button class="stepper" type="button" data-inc="${stat}">+</button>
-            </div>
-            <input type="hidden" name="${stat}" value="2" />
-          `).join("")}
-          <div class="moves-grid">
-            ${classes.runner.moves.map((move) => `
-              <article class="move-card">
-                <h3>Lv ${move.level}: ${move.name}</h3>
-                <p>${move.effect}</p>
-              </article>
-            `).join("")}
-          </div>
-        </section>
+      ${renderCreateHeader(3, "Choose your face", "Name the person waking up in the trash-light and pick the portrait the cameras remember.")}
+      <div class="field">
+        <label for="name">Character name</label>
+        <input id="name" name="name" maxlength="24" value="${draft.name}" />
       </div>
-      <button class="primary" type="submit">Enter Rook Sprawl</button>
+      <p class="section-label">Portrait</p>
+      <div class="portrait-grid">
+        ${portraits.map((portrait) => `
+          <button class="portrait-btn ${draft.portrait === portrait ? "selected" : ""}" type="button" data-portrait="${portrait}">
+            ${renderPortrait(portrait)}
+          </button>
+        `).join("")}
+      </div>
+      <input type="hidden" name="classId" value="${draft.classId}" />
+      <input type="hidden" name="guts" value="${draft.stats.guts}" />
+      <input type="hidden" name="wits" value="${draft.stats.wits}" />
+      <input type="hidden" name="charm" value="${draft.stats.charm}" />
+      <input type="hidden" name="portrait" value="${draft.portrait}" />
+      <div class="create-actions">
+        <button type="button" data-create-back="stats">Back</button>
+        <button class="primary" type="submit">Wake Up In Rook Sprawl</button>
+      </div>
     </form>
+  `);
+}
+
+function renderIntro() {
+  const player = state.player;
+  return renderShell(`
+    <section class="result-panel intro-panel">
+      <div class="result-copy">
+        ${renderPortrait(player.portrait)}
+        <p class="section-label">Rook Sprawl</p>
+        <h2>A bad morning with teeth</h2>
+        <p>You wake up in Rook Sprawl with a headache. Wearing nothing but lipstick and a trash bag.</p>
+        <p>Somebody has written your name on your arm in permanent marker: ${player.name}. The city has already decided that is enough paperwork.</p>
+        <p>First useful fact: you are still breathing. Second useful fact: the trash bag has pockets.</p>
+        <button class="primary" type="button" data-enter-area>Get Up</button>
+      </div>
+    </section>
   `);
 }
 
@@ -1768,8 +1866,12 @@ function renderMerchant() {
   const missingGuts = state.player.maxGuts - state.player.guts;
   const healCost = Math.ceil(missingGuts * 1.5);
   const statusHealCost = state.player.level * 8;
+  const respecCost = Math.max(2500, state.player.level * 125);
+  const statusText = state.player.status.length
+    ? state.player.status.map((s) => typeof s === "object" ? s.name : s).join(", ")
+    : "Nothing to clear";
   const healerHtml = dealer === "implants" ? `
-    <p class="section-label">Healer services</p>
+    <p class="section-label">Clinic services</p>
     <div class="bank-grid">
       <article class="equipment-card">
         <h3>Repair Meat</h3>
@@ -1781,10 +1883,18 @@ function renderMerchant() {
       </article>
       <article class="equipment-card">
         <h3>Purge Status</h3>
-        <p>Clears: ${state.player.status.length ? state.player.status.join(", ") : "Nothing to clear"}.</p>
+        <p>Clears: ${statusText}.</p>
         <span class="tag">${statusHealCost} credits</span>
         <div class="equip-actions">
           <button data-implant-heal-status="${statusHealCost}" ${state.player.credits < statusHealCost || !state.player.status.length ? "disabled" : ""}>Clear Status</button>
+        </div>
+      </article>
+      <article class="equipment-card">
+        <h3>Neural Repattern</h3>
+        <p>Level 25 service. Resets base Guts, Wits, and Charm to 1 and refunds the difference as unspent stat points.</p>
+        <span class="tag">${respecCost} credits</span>
+        <div class="equip-actions">
+          <button data-respec-stats="${respecCost}" ${state.player.level < 25 || state.player.credits < respecCost ? "disabled" : ""}>Redistribute Stats</button>
         </div>
       </article>
     </div>
@@ -2092,38 +2202,56 @@ function bindEvents() {
     startGame(new FormData(event.currentTarget));
   });
 
-  document.querySelectorAll("[data-class]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const form = document.querySelector("#createForm");
-      form.elements.classId.value = button.dataset.class;
-      document.querySelectorAll("[data-class]").forEach((item) => item.classList.toggle("selected", item === button));
-      document.querySelector(".moves-grid").innerHTML = classes[button.dataset.class].moves.map((move) => `
-        <article class="move-card"><h3>Lv ${move.level}: ${move.name}</h3><p>${move.effect}</p></article>
-      `).join("");
-    });
-  });
+  document.querySelectorAll("[data-create-class]").forEach((button) => button.addEventListener("click", () => {
+    state.create = { ...createDraft(), classId: button.dataset.createClass };
+    saveState();
+    render();
+  }));
+
+  document.querySelectorAll("[data-create-next]").forEach((button) => button.addEventListener("click", () => {
+    state.create = { ...createDraft(), step: button.dataset.createNext };
+    saveState();
+    render();
+  }));
+
+  document.querySelectorAll("[data-create-back]").forEach((button) => button.addEventListener("click", () => {
+    state.create = { ...createDraft(), step: button.dataset.createBack };
+    saveState();
+    render();
+  }));
 
   document.querySelectorAll("[data-portrait]").forEach((button) => {
     button.addEventListener("click", () => {
       const form = document.querySelector("#createForm");
-      form.elements.portrait.value = button.dataset.portrait;
+      state.create = { ...createDraft(), portrait: button.dataset.portrait };
+      saveState();
+      if (form) form.elements.portrait.value = button.dataset.portrait;
       document.querySelectorAll("[data-portrait]").forEach((item) => item.classList.toggle("selected", item === button));
     });
   });
 
+  document.querySelector("#name")?.addEventListener("input", (event) => {
+    state.create = { ...createDraft(), name: event.currentTarget.value };
+    saveState();
+  });
+
   const updateCreateStats = (stat, delta) => {
-    const form = document.querySelector("#createForm");
-    const currentTotal = ["guts", "wits", "charm"].reduce((sum, key) => sum + Number(form.elements[key].value), 0);
-    const current = Number(form.elements[stat].value);
+    const draft = createDraft();
+    const currentTotal = ["guts", "wits", "charm"].reduce((sum, key) => sum + Number(draft.stats[key]), 0);
+    const current = Number(draft.stats[stat]);
     if (delta > 0 && currentTotal >= 12) return;
     if (delta < 0 && current <= 1) return;
-    form.elements[stat].value = current + delta;
-    document.querySelector(`#${stat}Value`).textContent = current + delta;
-    document.querySelector("#pointsLeft").textContent = 12 - ["guts", "wits", "charm"].reduce((sum, key) => sum + Number(form.elements[key].value), 0);
+    state.create = {
+      ...draft,
+      stats: { ...draft.stats, [stat]: current + delta },
+    };
+    saveState();
+    render();
   };
 
   document.querySelectorAll("[data-inc]").forEach((button) => button.addEventListener("click", () => updateCreateStats(button.dataset.inc, 1)));
   document.querySelectorAll("[data-dec]").forEach((button) => button.addEventListener("click", () => updateCreateStats(button.dataset.dec, -1)));
+  document.querySelectorAll("[data-enter-area]").forEach((button) => button.addEventListener("click", enterFirstArea));
 
   document.querySelectorAll("[data-node-id]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -2160,6 +2288,7 @@ function bindEvents() {
   document.querySelectorAll("[data-stay-floor]").forEach((button) => button.addEventListener("click", () => stayHotel(Number(button.dataset.stayFloor), "floor")));
   document.querySelectorAll("[data-implant-heal-guts]").forEach((button) => button.addEventListener("click", () => implantHeal(Number(button.dataset.implantHealGuts), "guts")));
   document.querySelectorAll("[data-implant-heal-status]").forEach((button) => button.addEventListener("click", () => implantHeal(Number(button.dataset.implantHealStatus), "status")));
+  document.querySelectorAll("[data-respec-stats]").forEach((button) => button.addEventListener("click", () => respecStats(Number(button.dataset.respecStats))));
   document.querySelectorAll("[data-level-stat]").forEach((button) => button.addEventListener("click", () => addStat(button.dataset.levelStat)));
   document.querySelectorAll("[data-add-class]").forEach((button) => button.addEventListener("click", () => addClass(button.dataset.addClass)));
   document.querySelectorAll("[data-equip-skill]").forEach((button) => button.addEventListener("click", () => equipSkill(button.dataset.equipSkill)));
