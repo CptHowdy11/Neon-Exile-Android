@@ -526,6 +526,14 @@ button:disabled {
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.level-stat-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.level-stat-row .primary {
+  min-width: 92px;
+}
+
 .stepper {
   width: 36px;
   height: 34px;
@@ -721,6 +729,28 @@ button:disabled {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.loadout-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.loadout-column,
+.pack-panel {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.pack-panel {
+  padding-top: 4px;
+}
+
+.slot-list {
+  grid-template-columns: 1fr;
+}
+
 .dealer-tabs,
 .equip-actions {
   display: flex;
@@ -748,6 +778,17 @@ button:disabled {
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.06);
+}
+
+.slot-card-panel {
+  min-height: 0;
+}
+
+.slot-card-panel.selected {
+  border-color: rgb(var(--theme-rgb, 0, 212, 255));
+  background:
+    linear-gradient(135deg, rgba(var(--theme-rgb, 0, 212, 255), 0.18), rgba(255, 255, 255, 0.06)),
+    rgba(255, 255, 255, 0.07);
 }
 
 .equipment-card .item-image {
@@ -1219,15 +1260,24 @@ button:disabled {
   background-image: url("assets/snes/enemy-drone.png");
 }
 
-.pixel-foe-hexer,
-.pixel-foe-courier {
+.pixel-foe-hexer {
   background-image: url("assets/snes/enemy-hexer.png");
 }
 
-.pixel-foe-raider,
-.pixel-foe-titan,
-.pixel-foe-scav {
+.pixel-foe-courier {
+  background-image: url("assets/encounters/cornered-data-courier.png");
+}
+
+.pixel-foe-raider {
   background-image: url("assets/snes/enemy-raider.png");
+}
+
+.pixel-foe-titan {
+  background-image: url("assets/encounters/scrap-titan.png");
+}
+
+.pixel-foe-scav {
+  background-image: url("assets/encounters/half-buried-scavenger.png");
 }
 
 .node-image.pixel-rook {
@@ -1468,6 +1518,7 @@ button:disabled {
   .inventory-grid,
   .moves-grid,
   .equipment-grid,
+  .loadout-layout,
   .dealer-tile-grid {
     grid-template-columns: 1fr;
     margin-top: 20px;
@@ -1623,13 +1674,22 @@ button:disabled {
   background-image: url("assets/snes/enemy-drone.png");
 }
 
-.pixel-foe-hexer,
-.pixel-foe-courier {
+.pixel-foe-hexer {
   background-image: url("assets/snes/enemy-hexer.png");
 }
 
-.pixel-foe-raider,
-.pixel-foe-titan,
-.pixel-foe-scav {
+.pixel-foe-courier {
+  background-image: url("assets/encounters/cornered-data-courier.png");
+}
+
+.pixel-foe-raider {
   background-image: url("assets/snes/enemy-raider.png");
+}
+
+.pixel-foe-titan {
+  background-image: url("assets/encounters/scrap-titan.png");
+}
+
+.pixel-foe-scav {
+  background-image: url("assets/encounters/half-buried-scavenger.png");
 }

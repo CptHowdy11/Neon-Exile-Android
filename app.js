@@ -850,6 +850,13 @@ function canEquip(item, slot) {
   return item.slot === slot;
 }
 
+function selectedEquipSlot() {
+  const fallback = { slot: "lHand", implant: false };
+  const selected = state.equipmentFilter || fallback;
+  const slots = selected.implant ? implantSlots : equipmentSlots;
+  return slots[selected.slot] ? selected : fallback;
+}
+
 function equipItem(index, slot, implant = false) {
   ensureLoadout();
   const item = state.player.inventory[index];
@@ -857,6 +864,7 @@ function equipItem(index, slot, implant = false) {
   const target = implant ? state.player.implants : state.player.equipment;
   if (implant && item.type !== "implant") return;
   if (!implant && !canEquip(item, slot)) return;
+  if (implant && item.slot !== slot) return;
   const previous = target[slot];
   target[slot] = item;
   state.player.inventory.splice(index, 1);
@@ -2055,9 +2063,8 @@ function renderLevel() {
         <p>${state.player.unspent} points waiting. Guts increases max Guts too.</p>
       </div>
       ${["guts", "wits", "charm"].map((stat) => `
-        <div class="stat-row">
+        <div class="stat-row level-stat-row">
           <strong>${stat}: ${state.player.stats[stat]} base / ${effectiveStat(stat)} effective</strong>
-          <span></span>
           <button class="primary" data-level-stat="${stat}" ${state.player.unspent <= 0 ? "disabled" : ""}>Add</button>
         </div>
       `).join("")}
@@ -2079,6 +2086,14 @@ function renderLevel() {
 function renderEquipment() {
   ensureLoadout();
   const player = state.player;
+  const selected = selectedEquipSlot();
+  const selectedSlots = selected.implant ? implantSlots : equipmentSlots;
+  const selectedLabel = selectedSlots[selected.slot];
+  const compatibleItems = inventoryStacks(player.inventory
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => selected.implant
+      ? item.type === "implant" && item.slot === selected.slot
+      : canEquip(item, selected.slot)));
   const totals = ["attack", "defense", "speed", "wits", "guts", "charm"]
     .map((stat) => `<span class="tag">${gearStats[stat]} ${gearMod(stat) >= 0 ? "+" : ""}${gearMod(stat)}</span>`)
     .join("");
@@ -2107,35 +2122,48 @@ function renderEquipment() {
       </div>
       <p class="section-label">Active boosters</p>
       <div class="tag-list">${boosts}</div>
+      <div class="loadout-layout">
+        <section class="loadout-column">
+          <p class="section-label">Gear slots</p>
+          <div class="equipment-grid slot-list">
+            ${Object.entries(equipmentSlots).map(([slot, label]) => renderSlot(slot, label, player.equipment[slot], false, selected)).join("")}
+          </div>
+        </section>
+        <section class="loadout-column">
+          <p class="section-label">Implants</p>
+          <div class="equipment-grid slot-list">
+            ${Object.entries(implantSlots).map(([slot, label]) => renderSlot(slot, label, player.implants[slot], true, selected)).join("")}
+          </div>
+        </section>
+      </div>
+      <section class="pack-panel">
+        <p class="section-label">Pack: ${selectedLabel}</p>
+        <div class="inventory-grid">
+          ${compatibleItems.length ? compatibleItems.map((stack) => renderPackItem(stack, selected)).join("") : `<p class="empty">No compatible items for ${selectedLabel}.</p>`}
+        </div>
+      </section>
       <p class="section-label">Equipped skills (${equippedSkills.length}/3)</p>
       <div class="tag-list">${equippedSkills.length ? equippedSkills.map((skill) => `<span class="tag">${skill.name}${skillCooldown(skill) ? `: ${skillCooldown(skill)} quests` : ""}</span>`).join("") : `<span class="tag">No skills equipped</span>`}</div>
       <div class="moves-grid">${skillCards}</div>
-      <p class="section-label">Gear slots</p>
-      <div class="equipment-grid">
-        ${Object.entries(equipmentSlots).map(([slot, label]) => renderSlot(slot, label, player.equipment[slot], false)).join("")}
-      </div>
-      <p class="section-label">Implants</p>
-      <div class="equipment-grid">
-        ${Object.entries(implantSlots).map(([slot, label]) => renderSlot(slot, label, player.implants[slot], true)).join("")}
-      </div>
-      <p class="section-label">Pack</p>
-      <div class="inventory-grid">
-        ${player.inventory.length ? inventoryStacks(player.inventory.map((item, index) => ({ item, index }))).map((stack) => renderPackItem(stack)).join("") : `<p class="empty">No equippable gear in your pack.</p>`}
-      </div>
     </section>
   `);
 }
 
-function renderSlot(slot, label, item, implant) {
+function renderSlot(slot, label, item, implant, selected = selectedEquipSlot()) {
+  const active = selected.slot === slot && selected.implant === implant;
   return `
-    <article class="equipment-card">
+    <article class="equipment-card slot-card-panel ${active ? "selected" : ""}">
       <h3>${label}</h3>
-      ${item ? `${itemImage(item)}<p>${item.name}</p><span class="tag">${statLine(item)}</span><button data-unequip="${slot}" data-implant="${implant ? "1" : "0"}">Unequip</button>` : `<p class="empty">Empty</p>`}
+      ${item ? `${itemImage(item)}<p>${item.name}</p><span class="tag">${statLine(item)}</span>` : `<p class="empty">Empty</p>`}
+      <div class="equip-actions">
+        <button data-select-equip-slot="${slot}" data-implant="${implant ? "1" : "0"}">${active ? "Selected" : "Show Pack"}</button>
+        ${item ? `<button data-unequip="${slot}" data-implant="${implant ? "1" : "0"}">Unequip</button>` : ""}
+      </div>
     </article>
   `;
 }
 
-function renderPackItem(stack) {
+function renderPackItem(stack, selected = null) {
   const { item, indexes, count } = stack;
   const index = indexes[0];
   if (item.type === "consumable") {
@@ -2146,6 +2174,19 @@ function renderPackItem(stack) {
         <h3>${item.name}</h3>
         <p>${statLine(item)}</p>
         <div class="equip-actions"><button data-use-item="${index}">Use</button></div>
+      </article>
+    `;
+  }
+  if (selected) {
+    const implant = selected.implant;
+    const label = implant ? implantSlots[selected.slot] : equipmentSlots[selected.slot];
+    return `
+      <article class="inventory-card">
+        ${itemImage(item)}
+        ${countBadge(count)}
+        <h3>${item.name}</h3>
+        <p>${statLine(item)}</p>
+        <div class="equip-actions"><button data-equip="${index}" data-slot="${selected.slot}" data-implant="${implant ? "1" : "0"}">${implant ? "Install" : "Equip"} ${label}</button></div>
       </article>
     `;
   }
@@ -2274,6 +2315,10 @@ function bindEvents() {
   document.querySelectorAll("[data-dealer]").forEach((button) => button.addEventListener("click", () => setState({ dealer: button.dataset.dealer })));
   document.querySelectorAll("[data-merchant-hub]").forEach((button) => button.addEventListener("click", () => setState({ dealer: null })));
   document.querySelectorAll("[data-buy]").forEach((button) => button.addEventListener("click", () => buy(state.merchant, button.dataset.buyDealer, Number(button.dataset.buy))));
+  document.querySelectorAll("[data-select-equip-slot]").forEach((button) => button.addEventListener("click", () => {
+    state.equipmentFilter = { slot: button.dataset.selectEquipSlot, implant: button.dataset.implant === "1" };
+    render();
+  }));
   document.querySelectorAll("[data-equip]").forEach((button) => button.addEventListener("click", () => equipItem(Number(button.dataset.equip), button.dataset.slot, button.dataset.implant === "1")));
   document.querySelectorAll("[data-unequip]").forEach((button) => button.addEventListener("click", () => unequip(button.dataset.unequip, button.dataset.implant === "1")));
   document.querySelectorAll("[data-use-item]").forEach((button) => button.addEventListener("click", () => useItem(Number(button.dataset.useItem))));
