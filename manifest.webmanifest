@@ -4,7 +4,7 @@
   "description": "A cyberpunk text adventure RPG.",
   "start_url": "./index.html",
   "display": "standalone",
-  "orientation": "portrait-primary",
+  "orientation": "any",
   "background_color": "#080b0f",
   "theme_color": "#080b0f",
   "icons": [

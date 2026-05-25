@@ -10,6 +10,7 @@ const entries = [
   "app.js",
   "styles.css",
   "manifest.webmanifest",
+  "sw.js",
   "assets",
 ];
 

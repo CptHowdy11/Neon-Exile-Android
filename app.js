@@ -1,6 +1,12 @@
 const SAVE_KEY = "neon-exile-save-v3";
 const SLOT_KEY = "neon-exile-active-slot";
+const STATS_HINT_KEY = "neon-exile-stats-hint-seen";
 const SLOT_COUNT = 3;
+const statHelp = {
+  guts: "Strength and maximum health.",
+  wits: "Tricks, hacks, and quick thinking.",
+  charm: "Negotiation and helping strangers.",
+};
 
 const classes = {
   runner: {
@@ -693,6 +699,9 @@ const defaultLog = ["You wake under a vending machine awning with your name half
 let activeSlot = Number(localStorage.getItem(SLOT_KEY) || 0);
 let state = activeSlot ? loadState(activeSlot) : menuState();
 let mobileStatsOpen = false;
+let activityOpen = false;
+let equipmentView = "gear";
+let showStatsHint = !localStorage.getItem(STATS_HINT_KEY);
 
 function createDefaults() {
   return {
@@ -749,6 +758,44 @@ function saveState() {
   if (activeSlot) localStorage.setItem(slotKey(activeSlot), JSON.stringify(state));
 }
 
+function exportSaves() {
+  const slots = {};
+  for (let slot = 1; slot <= SLOT_COUNT; slot += 1) {
+    const stored = localStorage.getItem(slotKey(slot));
+    if (stored) slots[slot] = JSON.parse(stored);
+  }
+  const payload = {
+    game: "Neon Exile",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    slots,
+  };
+  const file = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(file);
+  link.download = "neon-exile-saves.json";
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+async function importSaves(file) {
+  try {
+    const payload = JSON.parse(await file.text());
+    const imported = Object.entries(payload.slots || {})
+      .filter(([slot, saved]) => Number(slot) >= 1 && Number(slot) <= SLOT_COUNT && saved?.player);
+    if (!imported.length) throw new Error("No playable character slots were found in that file.");
+    if (!window.confirm("Importing saves will replace matching character slots. Continue?")) return;
+    imported.forEach(([slot, saved]) => localStorage.setItem(slotKey(Number(slot)), JSON.stringify(saved)));
+    state = { ...menuState(), mode: "slotSelect", importNotice: `${imported.length} character slot${imported.length === 1 ? "" : "s"} imported.` };
+    activeSlot = 0;
+    localStorage.removeItem(SLOT_KEY);
+    render();
+  } catch (error) {
+    state.importNotice = error.message || "That save file could not be imported.";
+    render();
+  }
+}
+
 function setState(next) {
   state = { ...state, ...next };
   saveState();
@@ -757,10 +804,21 @@ function setState(next) {
 
 function addLog(message) {
   state.log = [message, ...(state.log || [])].slice(0, 12);
+  activityOpen = false;
 }
 
 function pick(list) {
   return list[Math.floor(Math.random() * list.length)];
+}
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "\"": "&quot;",
+    "'": "&#39;",
+  }[char]));
 }
 
 function effectiveStat(stat) {
@@ -850,11 +908,11 @@ function canEquip(item, slot) {
   return item.slot === slot;
 }
 
-function selectedEquipSlot() {
-  const fallback = { slot: "lHand", implant: false };
+function selectedEquipSlot(implant = equipmentView === "implants") {
+  const fallback = { slot: implant ? "neural" : "lHand", implant };
   const selected = state.equipmentFilter || fallback;
   const slots = selected.implant ? implantSlots : equipmentSlots;
-  return slots[selected.slot] ? selected : fallback;
+  return selected.implant === implant && slots[selected.slot] ? selected : fallback;
 }
 
 function equipItem(index, slot, implant = false) {
@@ -1609,6 +1667,13 @@ function renderSlotSelect() {
       <div class="slot-grid">
         ${Array.from({ length: SLOT_COUNT }, (_, index) => renderSlotCard(index + 1)).join("")}
       </div>
+      <div class="save-tools">
+        ${state.importNotice ? `<p class="save-notice">${escapeHtml(state.importNotice)}</p>` : ""}
+        <button type="button" data-export-saves>Export Saves</button>
+        <label class="utility-button" for="importSaves">Import Saves
+          <input id="importSaves" type="file" accept="application/json,.json" />
+        </label>
+      </div>
       <button class="danger menu-quit" data-quit-menu>Quit</button>
     </section>
   `;
@@ -1621,7 +1686,7 @@ function renderSlotCard(slot) {
     <article class="slot-card">
       ${summary ? renderPortrait(summary.portrait) : `<span class="portrait">+</span>`}
       <h2>Slot ${slot}</h2>
-      ${confirming ? `<p>This will permanently erase ${summary.name}. Are you sure?</p>` : summary ? `<p>${summary.name}</p><p>${summary.className} / Lv ${summary.level}</p><p>${summary.area}</p>` : `<p>Empty character slot</p>`}
+      ${confirming ? `<p>This will permanently erase ${escapeHtml(summary.name)}. Are you sure?</p>` : summary ? `<p>${escapeHtml(summary.name)}</p><p>${summary.className} / Lv ${summary.level}</p><p>${summary.area}</p>` : `<p>Empty character slot</p>`}
       ${confirming ? `<button class="danger" data-erase-slot="${slot}">Yes, erase</button><button data-cancel-erase>Cancel</button>` : `<button class="primary" data-select-slot="${slot}">${summary ? "Continue" : "New Character"}</button>${summary ? `<button class="danger" data-confirm-erase="${slot}">Erase</button>` : ""}`}
     </article>
   `;
@@ -1678,13 +1743,18 @@ function renderCreateClass(draft) {
 
 function renderCreateStats(draft) {
   const total = ["guts", "wits", "charm"].reduce((sum, key) => sum + draft.stats[key], 0);
+  const favoredStats = Object.entries(classes[draft.classId].statBonus)
+    .filter(([, bonus]) => bonus === Math.max(...Object.values(classes[draft.classId].statBonus)))
+    .map(([stat]) => stat)
+    .join(" and ");
   return renderShell(`
     <section class="create-panel">
       ${renderCreateHeader(2, "Distribute skill points", "Spend your starting edge. Twelve total points, no stat below one.")}
+      <p class="stat-tip">${classes[draft.classId].name} favors <strong>${favoredStats}</strong>, but any build can work.</p>
       <p class="section-label">Starting points left: <span id="pointsLeft">${12 - total}</span></p>
       ${["guts", "wits", "charm"].map((stat) => `
         <div class="stat-row">
-          <strong>${stat}</strong>
+          <span class="stat-copy"><strong>${stat}</strong><small>${statHelp[stat]}</small></span>
           <button class="stepper" type="button" data-dec="${stat}">-</button>
           <span id="${stat}Value">${draft.stats[stat]}</span>
           <button class="stepper" type="button" data-inc="${stat}">+</button>
@@ -1704,7 +1774,7 @@ function renderCreateIdentity(draft) {
       ${renderCreateHeader(3, "Choose your face", "Name the person waking up in the trash-light and pick the portrait the cameras remember.")}
       <div class="field">
         <label for="name">Character name</label>
-        <input id="name" name="name" maxlength="24" value="${draft.name}" />
+        <input id="name" name="name" maxlength="24" value="${escapeHtml(draft.name)}" />
       </div>
       <p class="section-label">Portrait</p>
       <div class="portrait-grid">
@@ -1736,7 +1806,7 @@ function renderIntro() {
         <p class="section-label">Rook Sprawl</p>
         <h2>A bad morning with teeth</h2>
         <p>You wake up in Rook Sprawl with a headache. Wearing nothing but lipstick and a trash bag.</p>
-        <p>Somebody has written your name on your arm in permanent marker: ${player.name}. The city has already decided that is enough paperwork.</p>
+        <p>Somebody has written your name on your arm in permanent marker: ${escapeHtml(player.name)}. The city has already decided that is enough paperwork.</p>
         <p>First useful fact: you are still breathing. Second useful fact: the trash bag has pockets.</p>
         <button class="primary" type="button" data-enter-area>Get Up</button>
       </div>
@@ -1794,7 +1864,7 @@ function renderQuest() {
   const pct = Math.max(0, Math.round((quest.foeHp / foe.hp) * 100));
   const skillButtons = equippedSkillList().map((skill) => {
     const cooldown = skillCooldown(skill);
-    return `<button class="choice-card" data-action="skill:${skill.id}" ${cooldown ? "disabled" : ""}><h3>${skill.name}</h3><p>${cooldown ? `Resets in ${cooldown} quests.` : skill.effect}</p></button>`;
+    return `<button class="choice-card" data-action="skill:${skill.id}" ${cooldown ? "disabled" : ""}><h3>${skill.name}<small>${skill.stat} ${effectiveStat(skill.stat)}</small></h3><p>${cooldown ? `Resets in ${cooldown} quests.` : skill.effect}</p></button>`;
   }).join("");
   return renderShell(`
     <section class="quest-panel">
@@ -1811,9 +1881,9 @@ function renderQuest() {
         </div>
         <div class="quest-right">
           <div class="choice-grid">
-            <button class="choice-card" data-action="attack"><h3>${quest.choices.attack}</h3><p>Guts-based attack. Direct, messy, effective.</p></button>
-            <button class="choice-card" data-action="trick"><h3>${quest.choices.trick}</h3><p>Wits-based play. Turn the scene sideways.</p></button>
-            ${foe.help ? `<button class="choice-card" data-action="help"><h3>${foe.help.label}</h3><p>Charm-based ambiguous choice. Success gives XP and random loot.</p></button>` : ""}
+            <button class="choice-card" data-action="attack"><h3>${quest.choices.attack}<small>Guts ${effectiveStat("guts")}</small></h3><p>Direct damage.</p></button>
+            <button class="choice-card" data-action="trick"><h3>${quest.choices.trick}<small>Wits ${effectiveStat("wits")}</small></h3><p>Outthink the threat.</p></button>
+            ${foe.help ? `<button class="choice-card" data-action="help"><h3>${foe.help.label}<small>Charm ${effectiveStat("charm")}</small></h3><p>Help for XP and loot.</p></button>` : ""}
             ${skillButtons}
             <button class="choice-card danger" data-action="run"><h3>${quest.choices.run}</h3><p>Escape the fight, lose some credits.</p></button>
           </div>
@@ -2086,14 +2156,6 @@ function renderLevel() {
 function renderEquipment() {
   ensureLoadout();
   const player = state.player;
-  const selected = selectedEquipSlot();
-  const selectedSlots = selected.implant ? implantSlots : equipmentSlots;
-  const selectedLabel = selectedSlots[selected.slot];
-  const compatibleItems = inventoryStacks(player.inventory
-    .map((item, index) => ({ item, index }))
-    .filter(({ item }) => selected.implant
-      ? item.type === "implant" && item.slot === selected.slot
-      : canEquip(item, selected.slot)));
   const totals = ["attack", "defense", "speed", "wits", "guts", "charm"]
     .map((stat) => `<span class="tag">${gearStats[stat]} ${gearMod(stat) >= 0 ? "+" : ""}${gearMod(stat)}</span>`)
     .join("");
@@ -2113,6 +2175,40 @@ function renderEquipment() {
       </article>
     `;
   }).join("");
+  const equipmentContent = () => {
+    if (equipmentView === "skills") {
+      return `
+        <p class="section-label">Equipped skills (${equippedSkills.length}/3)</p>
+        <div class="tag-list">${equippedSkills.length ? equippedSkills.map((skill) => `<span class="tag">${skill.name}${skillCooldown(skill) ? `: ${skillCooldown(skill)} quests` : ""}</span>`).join("") : `<span class="tag">No skills equipped</span>`}</div>
+        <div class="moves-grid">${skillCards}</div>
+      `;
+    }
+    const implants = equipmentView === "implants";
+    const selected = selectedEquipSlot(implants);
+    const slots = implants ? implantSlots : equipmentSlots;
+    const selectedLabel = slots[selected.slot];
+    const compatibleItems = inventoryStacks(player.inventory
+      .map((item, index) => ({ item, index }))
+      .filter(({ item }) => implants
+        ? item.type === "implant" && item.slot === selected.slot
+        : canEquip(item, selected.slot)));
+    return `
+      <div class="loadout-focus">
+        <section class="loadout-column">
+          <p class="section-label">${implants ? "Implant slots" : "Gear slots"}</p>
+          <div class="equipment-grid slot-list">
+            ${Object.entries(slots).map(([slot, label]) => renderSlot(slot, label, implants ? player.implants[slot] : player.equipment[slot], implants, selected)).join("")}
+          </div>
+        </section>
+        <section class="pack-panel">
+          <p class="section-label">Pack: ${selectedLabel}</p>
+          <div class="inventory-grid">
+            ${compatibleItems.length ? compatibleItems.map((stack) => renderPackItem(stack, selected)).join("") : `<p class="empty">No compatible items for ${selectedLabel}.</p>`}
+          </div>
+        </section>
+      </div>
+    `;
+  };
   return renderShell(`
     <section class="equipment-panel">
       <div>
@@ -2122,29 +2218,12 @@ function renderEquipment() {
       </div>
       <p class="section-label">Active boosters</p>
       <div class="tag-list">${boosts}</div>
-      <div class="loadout-layout">
-        <section class="loadout-column">
-          <p class="section-label">Gear slots</p>
-          <div class="equipment-grid slot-list">
-            ${Object.entries(equipmentSlots).map(([slot, label]) => renderSlot(slot, label, player.equipment[slot], false, selected)).join("")}
-          </div>
-        </section>
-        <section class="loadout-column">
-          <p class="section-label">Implants</p>
-          <div class="equipment-grid slot-list">
-            ${Object.entries(implantSlots).map(([slot, label]) => renderSlot(slot, label, player.implants[slot], true, selected)).join("")}
-          </div>
-        </section>
-      </div>
-      <section class="pack-panel">
-        <p class="section-label">Pack: ${selectedLabel}</p>
-        <div class="inventory-grid">
-          ${compatibleItems.length ? compatibleItems.map((stack) => renderPackItem(stack, selected)).join("") : `<p class="empty">No compatible items for ${selectedLabel}.</p>`}
-        </div>
-      </section>
-      <p class="section-label">Equipped skills (${equippedSkills.length}/3)</p>
-      <div class="tag-list">${equippedSkills.length ? equippedSkills.map((skill) => `<span class="tag">${skill.name}${skillCooldown(skill) ? `: ${skillCooldown(skill)} quests` : ""}</span>`).join("") : `<span class="tag">No skills equipped</span>`}</div>
-      <div class="moves-grid">${skillCards}</div>
+      <nav class="equipment-tabs" aria-label="Loadout sections">
+        <button class="${equipmentView === "gear" ? "selected" : ""}" data-equipment-view="gear">Gear</button>
+        <button class="${equipmentView === "implants" ? "selected" : ""}" data-equipment-view="implants">Implants</button>
+        <button class="${equipmentView === "skills" ? "selected" : ""}" data-equipment-view="skills">Skills</button>
+      </nav>
+      ${equipmentContent()}
     </section>
   `);
 }
@@ -2208,18 +2287,35 @@ function renderPackItem(stack, selected = null) {
   `;
 }
 
+function renderActivityFeed() {
+  const messages = state.log || [];
+  if (!messages.length) return "";
+  return `
+    <section class="activity-feed ${activityOpen ? "open" : ""}" aria-label="Recent activity">
+      <button class="activity-toggle" type="button" data-toggle-activity aria-expanded="${activityOpen}">
+        <span class="section-label">Latest</span>
+        <span class="activity-latest">${escapeHtml(messages[0])}</span>
+        <span class="activity-cue">${activityOpen ? "-" : "+"}</span>
+      </button>
+      ${activityOpen ? `<div class="activity-history">${messages.map((message) => `<p>${escapeHtml(message)}</p>`).join("")}</div>` : ""}
+    </section>
+  `;
+}
+
 function renderBottomBar() {
   const player = state.player;
   ensureLoadout();
   return `
     <footer class="bottom-bar theme-${state.area}${mobileStatsOpen ? " stats-expanded" : ""}">
+      ${renderActivityFeed()}
       ${renderPortrait(player.portrait)}
       <button class="status-grid" type="button" data-toggle-stats aria-expanded="${mobileStatsOpen}" aria-label="Toggle full stat bar">
-        <span class="status-pill status-player"><b>${player.name}</b>${classes[player.classId].name}</span>
+        <span class="status-pill status-player"><b>${escapeHtml(player.name)}</b>${classes[player.classId].name}</span>
         <span class="status-pill status-level"><b>Level</b>${player.level} (${player.xp}/${xpForNext()} XP)</span>
         <span class="status-pill status-guts"><b>Guts left</b>${player.guts}/${player.maxGuts}</span>
         <span class="status-pill status-money"><b>Money</b>${player.credits} credits</span>
         <span class="status-pill status-state"><b>Status</b>${player.status.length ? player.status.map(s => typeof s === 'object' ? s.name : s).join(", ") : "Clear"}</span>
+        <span class="expand-cue ${showStatsHint ? "attention" : ""}" aria-hidden="true">${mobileStatsOpen ? "-" : "+"}</span>
       </button>
       <nav class="bar-actions" aria-label="Game links">
         <button data-mode="area">Map</button>
@@ -2235,6 +2331,12 @@ function renderBottomBar() {
 function bindEvents() {
   document.querySelector("[data-toggle-stats]")?.addEventListener("click", () => {
     mobileStatsOpen = !mobileStatsOpen;
+    showStatsHint = false;
+    localStorage.setItem(STATS_HINT_KEY, "1");
+    render();
+  });
+  document.querySelector("[data-toggle-activity]")?.addEventListener("click", () => {
+    activityOpen = !activityOpen;
     render();
   });
 
@@ -2305,6 +2407,10 @@ function bindEvents() {
   });
 
   document.querySelectorAll("[data-open-slots]").forEach((button) => button.addEventListener("click", openSlots));
+  document.querySelectorAll("[data-export-saves]").forEach((button) => button.addEventListener("click", exportSaves));
+  document.querySelector("#importSaves")?.addEventListener("change", (event) => {
+    if (event.currentTarget.files[0]) importSaves(event.currentTarget.files[0]);
+  });
   document.querySelectorAll("[data-select-slot]").forEach((button) => button.addEventListener("click", () => selectSlot(Number(button.dataset.selectSlot))));
   document.querySelectorAll("[data-confirm-erase]").forEach((button) => button.addEventListener("click", () => confirmEraseSlot(Number(button.dataset.confirmErase))));
   document.querySelectorAll("[data-erase-slot]").forEach((button) => button.addEventListener("click", () => eraseSlot(Number(button.dataset.eraseSlot))));
@@ -2317,6 +2423,10 @@ function bindEvents() {
   document.querySelectorAll("[data-buy]").forEach((button) => button.addEventListener("click", () => buy(state.merchant, button.dataset.buyDealer, Number(button.dataset.buy))));
   document.querySelectorAll("[data-select-equip-slot]").forEach((button) => button.addEventListener("click", () => {
     state.equipmentFilter = { slot: button.dataset.selectEquipSlot, implant: button.dataset.implant === "1" };
+    render();
+  }));
+  document.querySelectorAll("[data-equipment-view]").forEach((button) => button.addEventListener("click", () => {
+    equipmentView = button.dataset.equipmentView;
     render();
   }));
   document.querySelectorAll("[data-equip]").forEach((button) => button.addEventListener("click", () => equipItem(Number(button.dataset.equip), button.dataset.slot, button.dataset.implant === "1")));
@@ -2344,3 +2454,9 @@ function bindEvents() {
 }
 
 render();
+
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  });
+}
